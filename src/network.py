@@ -7,7 +7,7 @@ class NetworkManager:
         self.peer = peer
 
     def send_encrypted_message(self, socket, message, aes_gcm):
-        """Envia mensagem encriptada com controle de tamanho"""
+        """Sends encrypted message with size control"""
         try:
             encrypted_data = CryptoManager.encrypt_message(aes_gcm, message)
             size_bytes = len(encrypted_data).to_bytes(4, 'big')
@@ -15,12 +15,12 @@ class NetworkManager:
             return True
         except Exception as e:
             self.peer.message_handler.print_message(
-                format_error_message(f"[-] Erro ao enviar mensagem: {e}")
+                format_error_message(f"[-] Error sending message: {e}")
             )
             return False
 
     def receive_encrypted_message(self, socket, aes_gcm):
-        """Recebe mensagem encriptada com controle de tamanho"""
+        """Receives encrypted message with size control"""
         try:
             size_data = socket.recv(4)
             if not size_data:
@@ -41,12 +41,12 @@ class NetworkManager:
 
         except Exception as e:
             self.peer.message_handler.print_message(
-                format_error_message(f"[-] Erro ao receber mensagem: {e}")
+                format_error_message(f"[-] Error receiving message: {e}")
             )
             return None
 
     def broadcast_message(self, message, sender_socket=None):
-        """Envia mensagem para todos os peers conectados"""
+        """Sends message to all connected peers"""
         peers_to_remove = []
 
         for peer_socket, (aes_gcm, peer_id, _) in list(self.peer.peers.items()):
@@ -55,7 +55,7 @@ class NetworkManager:
                     self.send_encrypted_message(peer_socket, message, aes_gcm)
                 except Exception as e:
                     self.peer.message_handler.print_message(
-                        format_error_message(f"\r[-] Erro ao enviar mensagem para {peer_id}: {e}")
+                        format_error_message(f"\r[-] Error sending message para {peer_id}: {e}")
                     )
                     peers_to_remove.append(peer_socket)
 
@@ -63,7 +63,7 @@ class NetworkManager:
             self.peer.remove_peer(peer_socket)
 
     def exchange_peer_info(self, peer_socket, aes_gcm, is_initiator):
-        """Troca informações entre peers após estabelecer conexão"""
+        """Exchanges information between peers after establishing connection"""
         try:
             if is_initiator:
                 if not self.send_encrypted_message(peer_socket, self.peer.peer_id, aes_gcm):
@@ -77,6 +77,6 @@ class NetworkManager:
             return remote_peer_id
         except Exception as e:
             self.peer.message_handler.print_message(
-                format_error_message(f"[-] Erro na troca de IDs: {e}")
+                format_error_message(f"[-] Error in ID exchange: {e}")
             )
             return None

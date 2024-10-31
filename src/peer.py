@@ -24,21 +24,21 @@ class SecurePeer:
         self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Gera par de chaves RSA
+        # Generate RSA key pair
         self.private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048
         )
         self.public_key = self.private_key.public_key()
 
-        # Comandos disponíveis
+        # Available commands
         self.commands = {
             'c': self.handle_connect,
             'connect': self.handle_connect,
             'help': self.show_help,
             'exit': self.handle_exit,
             'quit': self.handle_exit,
-            'sair': self.handle_exit
+            'sair': self.handle_exit  # Portuguese word for "exit"
         }
 
     def find_available_port(self):
@@ -53,7 +53,7 @@ class SecurePeer:
             print(message, end=end, flush=True)
 
     def format_message(self, peer_id, message, include_timestamp=True):
-        """Formata a mensagem com timestamp e ID do peer"""
+        """Formats the message with timestamp and peer ID"""
         if include_timestamp:
             timestamp = datetime.now().strftime("%H:%M:%S")
             return f"[{timestamp}] {peer_id}: {message}"
@@ -61,20 +61,20 @@ class SecurePeer:
 
     def show_help(self, *args):
         help_text = f"""
-{Fore.CYAN}=== Comandos Disponíveis ==={Style.RESET_ALL}
-    {Fore.GREEN}c, connect{Fore.RESET} <string>  - Conecta a outro peer usando a string de conexão
-    {Fore.GREEN}help{Fore.RESET}                - Mostra esta mensagem de ajuda
-    {Fore.GREEN}exit, quit, sair{Fore.RESET}    - Encerra o programa
+{Fore.CYAN}=== Commands ==={Style.RESET_ALL}
+    {Fore.GREEN}c, connect{Fore.RESET} <string>  - Connect to another peer using the connection string
+    {Fore.GREEN}help{Fore.RESET}                - Show this help message
+    {Fore.GREEN}exit, quit, sair{Fore.RESET}    - Closes the program
 
-Para conectar, use o comando connect com a string de conexão mostrada acima.
-Exemplo: connect 192.168.1.100:5000:abc123
+To connect, use the connect command with the connection string shown above.
+Example: connect 192.168.1.100:5000:abc123
 """
         self.print_message(help_text)
         return True
 
     def handle_connect(self, args):
         if not args:
-            self.print_message(f"{Fore.RED}[-] Use: connect <string_conexao>{Style.RESET_ALL}")
+            self.print_message(f"{Fore.RED}[-] Usage: connect <connection_string>{Style.RESET_ALL}")
             return True
         return self.connect_to_peer(args[0])
 
@@ -85,11 +85,11 @@ Exemplo: connect 192.168.1.100:5000:abc123
     def parse_connection_string(self, conn_str):
         try:
             if conn_str.count(':') != 2:
-                raise ValueError("Formato inválido. Use: ip:port:secret")
+                raise ValueError("Invalid format. Use: ip:port:secret")
             host, port, secret = conn_str.split(':')
             return host.strip(), int(port.strip()), secret.strip()
         except Exception as e:
-            self.print_message(f"{Fore.RED}[-] Erro ao parsear string de conexão: {e}{Style.RESET_ALL}")
+            self.print_message(f"{Fore.RED}[-] Error parsing connection string: {e}{Style.RESET_ALL}")
             return None, None, None
 
     def connect_to_peer(self, connection_string):
@@ -101,26 +101,26 @@ Exemplo: connect 192.168.1.100:5000:abc123
             peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             peer_socket.connect((host, port))
 
-            # Envia o secret
+            # Send the secret
             peer_socket.send(secret.encode())
 
-            # Recebe a confirmação
+            # Receive confirmation
             response = peer_socket.recv(1024).decode()
             if response != "OK":
-                self.print_message(f"{Fore.RED}[-] Conexão rejeitada - secret inválido{Style.RESET_ALL}")
+                self.print_message(f"{Fore.RED}[-] Connection rejected - Invalid secret{Style.RESET_ALL}")
                 peer_socket.close()
                 return True
 
-            # Envia nosso ID
+            # Send our ID
             peer_socket.send(self.peer_id.encode())
-            # Recebe o ID do peer remoto
+            # Receive the remote peer ID
             remote_peer_id = peer_socket.recv(1024).decode()
 
-            # Armazena informações do peer
+            # Store peer information
             self.peers[peer_socket] = (remote_peer_id, (host, port))
-            self.print_message(f"{Fore.GREEN}[+] Conectado a {remote_peer_id}{Style.RESET_ALL}")
+            self.print_message(f"{Fore.GREEN}[+] Connected ==> {remote_peer_id}{Style.RESET_ALL}")
 
-            # Inicia thread para receber mensagens
+            # Start thread to receive messages
             thread = threading.Thread(target=self.handle_peer_messages, args=(peer_socket,))
             thread.daemon = True
             thread.start()
@@ -128,12 +128,12 @@ Exemplo: connect 192.168.1.100:5000:abc123
             return True
 
         except Exception as e:
-            self.print_message(f"{Fore.RED}[-] Erro ao conectar ao peer: {e}{Style.RESET_ALL}")
+            self.print_message(f"{Fore.RED}[-] Error connecting to peer: {e}{Style.RESET_ALL}")
             return True
 
     def handle_peer_connection(self, peer_socket, address):
         try:
-            # Verifica o secret
+            # Check the secret
             received_secret = peer_socket.recv(1024).decode()
             if received_secret != self.secret:
                 peer_socket.send("ERROR".encode())
@@ -142,21 +142,21 @@ Exemplo: connect 192.168.1.100:5000:abc123
 
             peer_socket.send("OK".encode())
 
-            # Recebe o ID do peer remoto
+            # Get the ID of the remote peer
             remote_peer_id = peer_socket.recv(1024).decode()
-            # Envia nosso ID
+            # Send ID
             peer_socket.send(self.peer_id.encode())
 
-            # Armazena informações do peer
+            # Stores peer information
             self.peers[peer_socket] = (remote_peer_id, address)
-            self.print_message(f"\r{Fore.GREEN}[+] Peer {remote_peer_id} conectado de {address}{Style.RESET_ALL}")
+            self.print_message(f"\r{Fore.GREEN}[+] Peer {remote_peer_id} connected from {address}{Style.RESET_ALL}")
             self.print_message(f"{self.peer_id}> ", end='')
 
-            # Inicia o loop de recebimento de mensagens
+            # Starts message receiving loop
             self.handle_peer_messages(peer_socket)
 
         except Exception as e:
-            self.print_message(f"\r{Fore.RED}[-] Erro na conexão com {address}: {e}{Style.RESET_ALL}")
+            self.print_message(f"\r{Fore.RED}[-] Error connecting to {address}: {e}{Style.RESET_ALL}")
         finally:
             if peer_socket in self.peers:
                 remote_peer_id = self.peers[peer_socket][0]
@@ -165,7 +165,7 @@ Exemplo: connect 192.168.1.100:5000:abc123
                     peer_socket.close()
                 except:
                     pass
-                self.print_message(f"\r{Fore.RED}[-] {remote_peer_id} desconectado{Style.RESET_ALL}")
+                self.print_message(f"\r{Fore.RED}[-] {remote_peer_id} disconnected{Style.RESET_ALL}")
                 self.print_message(f"{self.peer_id}> ", end='')
 
     def handle_peer_messages(self, peer_socket):
@@ -182,7 +182,7 @@ Exemplo: connect 192.168.1.100:5000:abc123
 
             except Exception as e:
                 self.print_message(
-                    f"\r{Fore.RED}[-] Erro ao receber mensagem de {remote_peer_id}: {e}{Style.RESET_ALL}")
+                    f"\r{Fore.RED}[-] Error receiving message from {remote_peer_id}: {e}{Style.RESET_ALL}")
                 break
 
         if peer_socket in self.peers:
@@ -192,7 +192,7 @@ Exemplo: connect 192.168.1.100:5000:abc123
                 peer_socket.close()
             except:
                 pass
-            self.print_message(f"\r{Fore.YELLOW}[-] Peer {remote_peer_id} desconectado{Style.RESET_ALL}")
+            self.print_message(f"\r{Fore.YELLOW}[-] Peer {remote_peer_id} disconnected{Style.RESET_ALL}")
             self.print_message(f"{self.peer_id}> ", end='')
 
     def broadcast_message(self, message):
@@ -213,24 +213,24 @@ Exemplo: connect 192.168.1.100:5000:abc123
                     peer_socket.close()
                 except:
                     pass
-                self.print_message(f"\r{Fore.YELLOW}[-] Peer {remote_peer_id} desconectado{Style.RESET_ALL}")
+                self.print_message(f"\r{Fore.YELLOW}[-] Peer {remote_peer_id} disconnected{Style.RESET_ALL}")
 
     def start_listening(self):
-        """Inicia o socket de escuta para conexões de outros peers"""
+        """Starts the listening socket for connections from other peers"""
         try:
             self.listen_socket.bind((self.host, self.listen_port))
             self.listen_socket.listen(5)
 
             self.print_message(f"""
-{Fore.CYAN}{'=' * 20} Informações de Conexão {'=' * 20}{Style.RESET_ALL}
+{Fore.CYAN}{'=' * 20} Connection Information {'=' * 20}{Style.RESET_ALL}
 {Fore.GREEN}ID: {self.peer_id}
-Endereço: {self.host}:{self.listen_port}
+Address: {self.host}:{self.listen_port}
 Secret: {self.secret}{Style.RESET_ALL}
 
-{Fore.YELLOW}String de conexão (copie esta linha):{Style.RESET_ALL}
+{Fore.YELLOW}Connection string (copy this line):{Style.RESET_ALL}
 {Fore.GREEN}{self.host}:{self.listen_port}:{self.secret}{Style.RESET_ALL}
 
-{Fore.CYAN}Digite 'help' para ver os comandos disponíveis{Style.RESET_ALL}
+{Fore.CYAN}Type 'help' to see available commands{Style.RESET_ALL}
 {'=' * 65}
 """)
 
@@ -243,20 +243,20 @@ Secret: {self.secret}{Style.RESET_ALL}
                 except socket.error:
                     break
         except Exception as e:
-            self.print_message(f"{Fore.RED}[-] Erro ao iniciar escuta: {e}{Style.RESET_ALL}")
+            self.print_message(f"{Fore.RED}[-] Error starting listening: {e}{Style.RESET_ALL}")
 
     def process_user_input(self, user_input):
         if not user_input:
             return True
 
-        # Verifica se é um comando
+        # Check if it is a command
         command = user_input.split()[0].lower()
         args = user_input.split()[1:] if len(user_input.split()) > 1 else []
 
         if command in self.commands:
             return self.commands[command](args)
 
-        # Se não for comando, é uma mensagem para broadcast
+        # If not a command, it's a message for broadcast
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.print_message(f"\r{Fore.BLUE}[{timestamp}] {self.peer_id}: {user_input}{Style.RESET_ALL}")
         self.broadcast_message(user_input)
@@ -276,7 +276,7 @@ Secret: {self.secret}{Style.RESET_ALL}
                 except KeyboardInterrupt:
                     break
                 except Exception as e:
-                    self.print_message(f"{Fore.RED}[-] Erro: {e}{Style.RESET_ALL}")
+                    self.print_message(f"{Fore.RED}[-] Error: {e}{Style.RESET_ALL}")
 
             self.running = False
             for peer_socket in list(self.peers.keys()):
@@ -285,10 +285,10 @@ Secret: {self.secret}{Style.RESET_ALL}
                 except:
                     pass
             self.listen_socket.close()
-            self.print_message(f"\n{Fore.YELLOW}[*] Chat encerrado{Style.RESET_ALL}")
+            self.print_message(f"\n{Fore.YELLOW}[*] Chat closed{Style.RESET_ALL}")
 
         except Exception as e:
-            self.print_message(f"{Fore.RED}[-] Erro durante a execução: {e}{Style.RESET_ALL}")
+            self.print_message(f"{Fore.RED}[-] Error during execution: {e}{Style.RESET_ALL}")
 
 
 def main():
@@ -304,14 +304,14 @@ def main():
                     try:
                         listen_port = int(arg.split('=')[1])
                     except ValueError:
-                        print(f"{Fore.RED}[-] Porta inválida{Style.RESET_ALL}")
+                        print(f"{Fore.RED}[-] Invalid port{Style.RESET_ALL}")
                         return
 
         peer = SecurePeer(listen_port=listen_port, peer_id=peer_id)
         peer.start()
 
     except Exception as e:
-        print(f"{Fore.RED}[-] Erro ao iniciar o peer: {e}{Style.RESET_ALL}")
+        print(f"{Fore.RED}[-] Error starting peer: {e}{Style.RESET_ALL}")
 
 
 if __name__ == "__main__":

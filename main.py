@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-
 import sys
-from src.peer import SecurePeer  # Importação direta da classe
+from src.peer import SecurePeer  # Direct class import
 
 def main():
     peer_id = None
@@ -16,16 +15,15 @@ def main():
                 try:
                     listen_port = int(arg.split('=')[1])
                 except ValueError:
-                    print("[-] Porta inválida")
+                    print("[-] Invalid port")
                     return
 
-    # Cria e inicia o peer
     peer = SecurePeer(listen_port=listen_port, peer_id=peer_id)
 
     try:
         peer.start()
     except Exception as e:
-        print(f"[-] Erro ao iniciar o peer: {e}")
+        print(f"[-] Error starting peer: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

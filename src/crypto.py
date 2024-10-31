@@ -8,7 +8,7 @@ class CryptoManager:
         self.generate_keys()
 
     def generate_keys(self):
-        """Gera o par de chaves RSA"""
+        """Generates the RSA key pair"""
         self.private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048
@@ -16,14 +16,14 @@ class CryptoManager:
         self.public_key = self.private_key.public_key()
 
     def get_public_key_pem(self):
-        """Retorna a chave pública em formato PEM"""
+        """Returns the public key in PEM format"""
         return self.public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
 
     def decrypt_aes_key(self, encrypted_aes_key):
-        """Decripta a chave AES usando a chave privada RSA"""
+        """Decrypts the AES key using the RSA private key"""
         return self.private_key.decrypt(
             encrypted_aes_key,
             padding.OAEP(
@@ -34,7 +34,7 @@ class CryptoManager:
         )
 
     def encrypt_aes_key(self, aes_key, public_key_pem):
-        """Encripta a chave AES usando a chave pública fornecida"""
+        """Encrypts the AES key using the provided public key"""
         remote_public_key = serialization.load_pem_public_key(public_key_pem)
         return remote_public_key.encrypt(
             aes_key,
@@ -47,13 +47,13 @@ class CryptoManager:
 
     @staticmethod
     def create_aes_gcm():
-        """Cria uma nova instância AES-GCM com uma chave aleatória"""
+        """Creates a new AES-GCM instance with a random key"""
         aes_key = AESGCM.generate_key(bit_length=256)
         return aes_key, AESGCM(aes_key)
 
     @staticmethod
     def encrypt_message(aes_gcm, message):
-        """Encripta uma mensagem usando AES-GCM"""
+        """Encrypts a message using AES-GCM"""
         nonce = secrets.token_bytes(12)
         encrypted_message = aes_gcm.encrypt(
             nonce,
@@ -64,7 +64,7 @@ class CryptoManager:
 
     @staticmethod
     def decrypt_message(aes_gcm, encrypted_data):
-        """Decripta uma mensagem usando AES-GCM"""
+        """Decrypts a message using AES-GCM"""
         nonce = encrypted_data[:12]
         ciphertext = encrypted_data[12:]
         return aes_gcm.decrypt(nonce, ciphertext, None).decode()
