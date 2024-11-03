@@ -8,12 +8,16 @@ from colorama import init, Fore, Style
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from .session import N0ctuaSessionManager, SessionError
+from .commands import CommandHandler
+from .ui import MessageHandler
 
 init(autoreset=True)
 
 
 class SecurePeer:
     def __init__(self, listen_port=None, peer_id=None):
+        print("Initializing SecurePeer...")  # Debug
         self.peer_id = peer_id or f"Peer_{secrets.token_hex(2)}"
         self.listen_port = listen_port or self.find_available_port()
         self.host = socket.gethostbyname(socket.gethostname())
@@ -23,6 +27,9 @@ class SecurePeer:
         self.running = True
         self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.session_manager = N0ctuaSessionManager()
+        self.message_handler = MessageHandler()  # Adicione esta linha
+        self.command_handler = CommandHandler(self)
 
         # Generate RSA key pair
         self.private_key = rsa.generate_private_key(
@@ -30,16 +37,6 @@ class SecurePeer:
             key_size=2048
         )
         self.public_key = self.private_key.public_key()
-
-        # Available commands
-        self.commands = {
-            'c': self.handle_connect,
-            'connect': self.handle_connect,
-            'help': self.show_help,
-            'exit': self.handle_exit,
-            'quit': self.handle_exit,
-            'sair': self.handle_exit  # Portuguese word for "exit"
-        }
 
     def find_available_port(self):
         temp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,28 +56,6 @@ class SecurePeer:
             return f"[{timestamp}] {peer_id}: {message}"
         return f"{peer_id}: {message}"
 
-    def show_help(self, *args):
-        help_text = f"""
-{Fore.CYAN}=== Commands ==={Style.RESET_ALL}
-    {Fore.GREEN}c, connect{Fore.RESET} <string>  - Connect to another peer using the connection string
-    {Fore.GREEN}help{Fore.RESET}                - Show this help message
-    {Fore.GREEN}exit, quit, sair{Fore.RESET}    - Closes the program
-
-To connect, use the connect command with the connection string shown above.
-Example: connect 192.168.1.100:5000:abc123
-"""
-        self.print_message(help_text)
-        return True
-
-    def handle_connect(self, args):
-        if not args:
-            self.print_message(f"{Fore.RED}[-] Usage: connect <connection_string>{Style.RESET_ALL}")
-            return True
-        return self.connect_to_peer(args[0])
-
-    def handle_exit(self, *args):
-        self.running = False
-        return False
 
     def parse_connection_string(self, conn_str):
         try:
@@ -132,10 +107,15 @@ Example: connect 192.168.1.100:5000:abc123
             return True
 
     def handle_peer_connection(self, peer_socket, address):
+        session_id = None
         try:
+            # Create session first
+            session_id = self.session_manager.create_session(str(address))
+
             # Check the secret
             received_secret = peer_socket.recv(1024).decode()
             if received_secret != self.secret:
+                self.session_manager.invalidate_session(session_id)
                 peer_socket.send("ERROR".encode())
                 peer_socket.close()
                 return
@@ -147,17 +127,24 @@ Example: connect 192.168.1.100:5000:abc123
             # Send ID
             peer_socket.send(self.peer_id.encode())
 
-            # Stores peer information
-            self.peers[peer_socket] = (remote_peer_id, address)
+            # Update session with peer ID
+            self.session_manager.update_session_peer_id(session_id, remote_peer_id)
+
+            # Store peer information with session
+            self.peers[peer_socket] = (remote_peer_id, address, session_id)
             self.print_message(f"\r{Fore.GREEN}[+] Peer {remote_peer_id} connected from {address}{Style.RESET_ALL}")
             self.print_message(f"{self.peer_id}> ", end='')
 
             # Starts message receiving loop
             self.handle_peer_messages(peer_socket)
 
+        except SessionError as e:
+            self.print_message(f"{Fore.RED}[-] Session error: {e}{Style.RESET_ALL}")
         except Exception as e:
             self.print_message(f"\r{Fore.RED}[-] Error connecting to {address}: {e}{Style.RESET_ALL}")
         finally:
+            if session_id:
+                self.session_manager.invalidate_session(session_id)
             if peer_socket in self.peers:
                 remote_peer_id = self.peers[peer_socket][0]
                 del self.peers[peer_socket]
@@ -246,8 +233,9 @@ Secret: {self.secret}{Style.RESET_ALL}
             self.print_message(f"{Fore.RED}[-] Error starting listening: {e}{Style.RESET_ALL}")
 
     def process_user_input(self, user_input):
-        if not user_input:
-            return True
+        """Process user input using the CommandHandler"""
+        print(f"Peer processing input: {user_input}")  # Debug
+        return self.command_handler.process_user_input(user_input)
 
         # Check if it is a command
         command = user_input.split()[0].lower()

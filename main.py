@@ -4,6 +4,7 @@ import sys
 from src.peer import SecurePeer  # Direct class import
 
 def main():
+    print("Starting N0ctua...")  # Debug
     peer_id = None
     listen_port = None
 
@@ -18,9 +19,11 @@ def main():
                     print("[-] Invalid port")
                     return
 
+    print(f"Creating peer with id={peer_id}, port={listen_port}")  # Debug
     peer = SecurePeer(listen_port=listen_port, peer_id=peer_id)
 
     try:
+        print("Starting peer...")  # Debug
         peer.start()
     except Exception as e:
         print(f"[-] Error starting peer: {e}")
