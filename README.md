@@ -7,6 +7,23 @@
 
 A secure peer-to-peer encrypted chat application built with Python. This tool enables direct communication between peers with end-to-end encryption.
 
+## Updates v1.2
+
+- Session Management System
+- Automatic session rotation mechanism
+- Session validation for all operations
+- Enhanced peer verification
+- New Command (sessions) for view and monitor active sessions
+- Implemented CommandHandler system
+- Fixed connection handling issues
+
+
+
+
+
+
+
+
 ## Features
 
 -  End-to-end encryption using RSA and AES-GCM
@@ -83,6 +100,7 @@ connect 192.168.1.101:5000:their_secret
 
 4. Available commands:
 - `connect` or `c`: Connect to another peer
+- `sessions`: Display active session information and status
 - `help`: Show help message
 - `exit`, `quit`, or `sair`: Close the application
 
@@ -93,6 +111,8 @@ connect 192.168.1.101:5000:their_secret
 - **Connection Authentication**: Uses a secret token to verify connections
 - **Secure Key Exchange**: Implements secure key exchange protocol
 - **No Message Storage**: Messages are only held in memory during transmission
+- **Automatic session rotation (every 30 minutes)**
+- **Session state monitoring and validation**
 
 ## Message Format
 
