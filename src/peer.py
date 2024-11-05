@@ -17,7 +17,6 @@ init(autoreset=True)
 
 class SecurePeer:
     def __init__(self, listen_port=None, peer_id=None):
-        print("Initializing SecurePeer...")  # Debug
         self.peer_id = peer_id or f"Peer_{secrets.token_hex(2)}"
         self.listen_port = listen_port or self.find_available_port()
         self.host = socket.gethostbyname(socket.gethostname())
@@ -28,7 +27,7 @@ class SecurePeer:
         self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.session_manager = N0ctuaSessionManager()
-        self.message_handler = MessageHandler()  # Adicione esta linha
+        self.message_handler = MessageHandler()
         self.command_handler = CommandHandler(self)
 
         # Generate RSA key pair
@@ -209,17 +208,17 @@ class SecurePeer:
             self.listen_socket.listen(5)
 
             self.print_message(f"""
-{Fore.CYAN}{'=' * 20} Connection Information {'=' * 20}{Style.RESET_ALL}
-{Fore.GREEN}ID: {self.peer_id}
-Address: {self.host}:{self.listen_port}
-Secret: {self.secret}{Style.RESET_ALL}
+    {Fore.CYAN}{'=' * 20} Connection Information {'=' * 20}{Style.RESET_ALL}
+    {Fore.GREEN}ID: {self.peer_id}
+    Address: {self.host}:{self.listen_port}
+    Secret: {self.secret}{Style.RESET_ALL}
 
-{Fore.YELLOW}Connection string (copy this line):{Style.RESET_ALL}
-{Fore.GREEN}{self.host}:{self.listen_port}:{self.secret}{Style.RESET_ALL}
+    {Fore.YELLOW}Connection string (copy this line):{Style.RESET_ALL}
+    {Fore.GREEN}{self.host}:{self.listen_port}:{self.secret}{Style.RESET_ALL}
 
-{Fore.CYAN}Type 'help' to see available commands{Style.RESET_ALL}
-{'=' * 65}
-""")
+    {Fore.CYAN}Type 'help' to see available commands{Style.RESET_ALL}
+    {'=' * 65}
+    """)
 
             while self.running:
                 try:

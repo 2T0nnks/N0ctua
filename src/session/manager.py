@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, List
 from .models import SessionStatus, TransitionToken
 from .exceptions import SessionError, SessionRotationError, SessionValidationError
+from ..utils.session_config import SessionConfig
 
 
 class N0ctuaSessionManager:
@@ -14,14 +15,14 @@ class N0ctuaSessionManager:
         self.rotation_schedule: Dict[str, datetime] = {}
         self.lock = threading.Lock()
 
-        # Configuration settings
-        self.config = {
-            'token_lifetime': 30,  # seconds
-            'notification_window': 10,  # seconds
-            'max_queue_size': 100,  # messages
-            'max_queue_age': 30,  # seconds
-            'rotation_interval': 1800  # 30 minutes
-        }
+        # Load config in session_config.py
+        self.config = SessionConfig.get_config()
+        try:
+            SessionConfig.validate_config(self.config)
+        except ValueError as e:
+            print(f"Warning: Configuration validation failed: {e}")
+            print("Using default configuration values")
+            self.config = SessionConfig.DEFAULT_CONFIG
 
     def create_session(self, peer_id: str) -> str:
         """Creates a new session for a peer"""

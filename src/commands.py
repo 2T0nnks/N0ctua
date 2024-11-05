@@ -6,7 +6,6 @@ from .ui.formatting import Fore, Style
 
 class CommandHandler:
     def __init__(self, peer):
-        print("Initializing CommandHandler...")  # Debug
         self.peer = peer
         self.commands = {
             'c': self.handle_connect,
@@ -21,7 +20,6 @@ class CommandHandler:
             'sessions': self.show_active_sessions
         }
 
-    # Adicione este metodo
     def show_help(self, *args):
         """Shows help for available commands"""
         help_text = f"""

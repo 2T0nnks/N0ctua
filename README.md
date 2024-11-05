@@ -17,13 +17,6 @@ A secure peer-to-peer encrypted chat application built with Python. This tool en
 - Implemented CommandHandler system
 - Fixed connection handling issues
 
-
-
-
-
-
-
-
 ## Features
 
 -  End-to-end encryption using RSA and AES-GCM
